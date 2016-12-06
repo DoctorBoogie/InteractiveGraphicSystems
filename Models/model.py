@@ -52,6 +52,9 @@ class Model:
     def set_observer(self, observer):
         self.transformation_matrix = self.projection_matrix(observer)
 
+    def set_light_source(self, light_source):
+        self.light_source = light_source
+
     def polygon_approximation(self):
         """
         Аппроксимация полигонами.
@@ -123,6 +126,27 @@ class Model:
 
         return data
 
+    def surface_normal(self, pol):
+        """
+        Вычисление нормали многоугольника.
+        Задача сводится к вычислению векторного произведения векторов AB и AC.
+        :param pol: Полигон
+        :return: Кортеж из трех элементов с координатами вектора-нормали.
+        """
+        v1 = (pol.b.x - pol.a.x,
+              pol.b.y - pol.a.y,
+              pol.b.z - pol.a.z)
+
+        v2 = (pol.c.x - pol.a.x,
+              pol.c.y - pol.a.y,
+              pol.c.z - pol.a.z)
+
+        norm = (v1[1] * v2[2] - v1[2] * v2[1],
+                v1[2] * v2[0] - v1[0] * v2[2],
+                v1[0] * v2[1] - v1[1] * v2[0])
+
+        return norm
+
     def flat_shading(self):
         """
         Плоская закраска с использованием алгоритма художника.
@@ -155,32 +179,13 @@ class Model:
 
     def flat_shading_color(self, polygon):
         """
+        Плоская закраска.
         Вычисление цвета и его яркости. При одной и той же итенсивности света полигон освещён максимально ярко,
         если свет ему перпендикулярен. Если косинус угла между вектором к источнику и нормалью поверхности
         неотрицателен, то данная поверхность внешняя, в противном случае внутренняя
         :param polygon:
         :return:
         """
-        def normal(pol):
-            """
-            Вычисление нормали многоугольника.
-            Задача сводится к вычислению векторного произведения векторов AB и AC.
-            :param pol: Полигон
-            :return: Кортеж из трех элементов с координатами вектора-нормали.
-            """
-            v1 = (pol.b.x - pol.a.x,
-                  pol.b.y - pol.a.y,
-                  pol.b.z - pol.a.z)
-
-            v2 = (pol.c.x - pol.a.x,
-                  pol.c.y - pol.a.y,
-                  pol.c.z - pol.a.z)
-
-            norm = (v1[1]*v2[2] - v1[2]*v2[1],
-                    v1[2]*v2[0] - v1[0]*v2[2],
-                    v1[0]*v2[1] - v1[1]*v2[0])
-
-            return norm
 
         def vec_length(vec):
             return math.sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
@@ -193,7 +198,7 @@ class Model:
         light_vec = (0, 0, 1)
         # light_vec = (self.light_source.x, self.light_source.y, self.light_source.z)
 
-        norm = normal(polygon)
+        norm = self.surface_normal(polygon)
 
         # cos = (obs[0]*norm[0] + obs[1]*norm[1] + obs[2]*norm[2]) / (vec_length(norm) * vec_length(obs))
         def get_cos(v1, v2):
@@ -214,3 +219,46 @@ class Model:
                                color.blue() * cos)
 
         return polygon_color
+
+    def flat_shading_z_buffer(self):
+        # Создание Z-буфера (массив размером ширина х высота)
+        z_buffer = []
+        for i in range(self.width):
+            z_buffer.append([])
+            for j in range(self.height):
+                z_buffer.append(None)
+
+    def gouraud_shading(self):
+        """
+        Закраска по Гуро.
+        :return:
+        """
+        """
+        Вычисление нормали в вершине. Производится обход всех полигонов. Для каждого
+        полигона вычисляется вектор нормали, затем добавляется во все вершины, входящие
+        в полигон. После этого для каждой вершины вычисляется усредненная нормаль. При
+        этом производится однократный обход всех полигонов и всех вершин.
+        """
+        v_map = {}  # Словарь "вершина : список нормалей смежных полигонов".
+
+        # Просматриваем каждый полигон и вычисляем его нормаль.
+        for pol in self.polygons:
+            norm = self.surface_normal(pol)
+            # Для каждого полигона рассматриваем его вершины и записываем нормали.
+            for v in pol.vertices:
+                if v in v_map:
+                    v_map[v].append(norm)
+                else:
+                    v_map[v] = []
+                    v_map[v].append(norm)
+
+        v_normals = {}  # Словарь для хранения усредненной нормали вершины.
+
+        for key in v_map.keys():
+            v_normals[key] = self.average_vector(v_map[key])
+
+    def average_vector(self, vectors):
+        pass
+
+    def phong_shading(self):
+        pass

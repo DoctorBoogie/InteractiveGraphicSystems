@@ -133,11 +133,12 @@ class TransformationMatrix:
 
 # Точка с однородными координатами.
 class HomogeneousPoint:
-    def __init__(self):
-        self.point_struct = np.matrix([0, 0, 0, 1])
-
-    def __init__(self, x, y, z, c=1):
+    def __init__(self, x=0, y=0, z=0, c=1):
         self.point_struct = np.matrix([x, y, z, c])
+
+    @classmethod
+    def from_homogeneous_point(cls, homogeneous_point):
+        return cls(homogeneous_point.x, homogeneous_point.y, homogeneous_point.z)
 
     # Умножение вектора и матрицы преобразований.
     def __mul__(self, other):
@@ -146,10 +147,10 @@ class HomogeneousPoint:
 
     # Сравнение точек.
     def __eq__(self, other):
-        return ( self.point_struct.item(0) == other.point_struct.item(0) and
+        return (self.point_struct.item(0) == other.point_struct.item(0) and
                 self.point_struct.item(1) == other.point_struct.item(1) and
                 self.point_struct.item(2) == other.point_struct.item(2) and
-                self.point_struct.item(3) == other.point_struct.item(3) )
+                self.point_struct.item(3) == other.point_struct.item(3))
 
     @property
     def x(self):
@@ -183,23 +184,68 @@ class Point:
         return "("+str(self.x)+", "+str(self.y)+")"
 
 
-class Vertex:
-    def __init__(self, p):
-        self.p = p
+# class Vertex(HomogeneousPoint):
+#     def __init__(self, x=0, y=0, z=0, c=1):
+#         super().__init__(x, y, z, c)
+#
+#         # Список нормалей
+#         self.normals = []
+#
+#     @classmethod
+#     def from_homogeneous_point(cls, homogeneous_point):
+#         return HomogeneousPoint.from_homogeneous_point(homogeneous_point)
+#
+#     def get_normal(self):
+#         pass
+#
+#     def add_normal(self, normal):
+#         self.normals.append(normal)
 
-    def get_normal(self):
-        pass
+# class Vertex:
+#     def __init__(self, p):
+#         """
+#         :param p: Координата точки в пространстве, тип HomogeneousPoint.
+#         """
+#         self.point = p
+#
+#     def get_normal(self):
+#         pass
+#
+#     def add_polygon_normal(self):
+#         pass
+#
+#     def plane_vertex(self):
+#         return self.point.convert_to_2d()
+#
+#     @property
+#     def x(self):
+#         return self.point.x
+#
+#     @property
+#     def y(self):
+#         return self.point.y
+#
+#     @property
+#     def z(self):
+#         return self.point.z
 
-    def add_polygon_normal(self):
-        pass
 
-
-# Класс-полигон
+# Многоугольник
 class Polygon:
     def __init__(self, a, b, c):
-        self.a = Vertex(a)
-        self.b = Vertex(b)
-        self.c = Vertex(c)
+        """
+        Три вершины многоугольника. Каждая из них типа Vertex.
+        :param a:
+        :param b:
+        :param c:
+        """
+        # self.a = Vertex.from_homogeneous_point(a)
+        # self.b = Vertex.from_homogeneous_point(b)
+        # self.c = Vertex.from_homogeneous_point(c)
+
+        self.a = a
+        self.b = b
+        self.c = c
 
     def convertion_two_dim(self):
         return (self.a.convert_to_2d(),
@@ -209,3 +255,6 @@ class Polygon:
     @property
     def vertices(self):
         return list(self.a, self.b, self.c)
+
+if __name__ == '__main__':
+    pass

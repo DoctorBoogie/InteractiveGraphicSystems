@@ -220,6 +220,9 @@ class Model:
 
         return polygon_color
 
+    def triangle_rasterization(self, polygon, color_function=None):
+        pass
+
     def flat_shading_z_buffer(self):
         # Создание Z-буфера (массив размером ширина х высота)
         z_buffer = []
@@ -227,6 +230,8 @@ class Model:
             z_buffer.append([])
             for j in range(self.height):
                 z_buffer.append(None)
+
+
 
     def gouraud_shading(self):
         """

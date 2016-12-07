@@ -190,6 +190,9 @@ class Point:
     def __add__(self, other):
         return Point(self.x+other.x, self.y+other.y)
 
+    def __sub__(self, other):
+        return Point(self.x-other.x, self.y-other.y)
+
 
 # class Vertex(HomogeneousPoint):
 #     def __init__(self, x=0, y=0, z=0, c=1):
@@ -254,14 +257,36 @@ class Polygon:
         self.b = b
         self.c = c
 
+        self.a_plane, self.b_plane, self.c_plane = self.normal()
+        self.d_plane = -(self.a_plane*self.a.x +
+                         self.b_plane*self.a.y +
+                         self.c_plane*self.a.z)
+
     def convertion_two_dim(self):
         return (self.a.convert_to_2d(),
                 self.b.convert_to_2d(),
                 self.c.convert_to_2d())
 
-    @property
     def vertices(self):
         return list(self.a, self.b, self.c)
+
+    def normal(self):
+        v1 = (self.b.x - self.a.x,
+              self.b.y - self.a.y,
+              self.b.z - self.a.z)
+
+        v2 = (self.c.x - self.a.x,
+              self.c.y - self.a.y,
+              self.c.z - self.a.z)
+
+        norm = (v1[1] * v2[2] - v1[2] * v2[1],
+                v1[2] * v2[0] - v1[0] * v2[2],
+                v1[0] * v2[1] - v1[1] * v2[0])
+
+        return norm
+
+    def z_depth(self, x, y):
+        return -(x * self.a_plane + y * self.b_plane + self.d_plane)/self.c_plane
 
 if __name__ == '__main__':
     pass

@@ -1,7 +1,9 @@
 from PyQt5.QtGui import QColor
 
 from Utility.structures import TransformationMatrix, Polygon
+
 import math
+from operator import attrgetter
 
 
 class Model:
@@ -30,6 +32,9 @@ class Model:
 
         self.front_color = QColor(255, 255, 0)
         self.inner_color = QColor(0, 255, 255)
+
+        self.z_buffer = []
+        self.init_z_buffer(self.width, self.height)
 
     def set_shape(self, shape):
         self.shape = shape
@@ -220,17 +225,47 @@ class Model:
 
         return polygon_color
 
-    def triangle_rasterization(self, polygon, color_function=None):
-        pass
+    def triangle_rasterization(self, polygon, pixel_function, *args):
+        # Сортируем вершины по значению координаты y.
+        t0, t1, t2 = sorted(polygon.vertices(), key=attrgetter('y'))
+
+        # Высота треугольника
+        total_height = t2.y - t0.y
+
+        # Рассматриваем верхнюю половину треугольника
+        for y in range(t0.y, t1.y + 1):
+            segment_height = t1.y - t0.y + 1
+            alpha = (y - t0.y)/total_height
+            beta = (y - t0.y)/segment_height
+            a = t0 + (t2-t0)*alpha
+            b = t0 + (t1-t0)*beta
+
+            if a.x > b.x:
+                a, b = b, a
+
+            for x in range(a.x, b.x + 1):
+                color = pixel_function(x, y, args)
+                # self.z_buffer[x][y] = color
+
+        # Нижняя половина треугольника
+        for y in range(t1.y, t2.y+1):
+            segment_height = t2.y - t1.y + 1
+            alpha = (y - t0.y)/total_height
+            beta = (y- t1.y)/segment_height
+            a = t0 + (t2-t0)*alpha
+            b = t1 + (t2-t1)*beta
+
+            if a.x > b.x:
+                a, b = b, a
+
+            for x in range(a.x, b.x + 1):
+                pass
+                # color_function(x, y, color_args)
+
+
 
     def flat_shading_z_buffer(self):
-        # Создание Z-буфера (массив размером ширина х высота)
-        z_buffer = []
-        for i in range(self.width):
-            z_buffer.append([])
-            for j in range(self.height):
-                z_buffer.append(None)
-
+        pass
 
 
     def gouraud_shading(self):
@@ -250,7 +285,7 @@ class Model:
         for pol in self.polygons:
             norm = self.surface_normal(pol)
             # Для каждого полигона рассматриваем его вершины и записываем нормали.
-            for v in pol.vertices:
+            for v in pol.vertices():
                 if v in v_map:
                     v_map[v].append(norm)
                 else:
@@ -267,3 +302,10 @@ class Model:
 
     def phong_shading(self):
         pass
+
+    def init_z_buffer(self, width=None, height=None):
+        for i in range(width):
+            self.z_buffer.append([])
+            for j in range(height):
+                self.z_buffer.append(None)
+

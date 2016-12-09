@@ -7,8 +7,12 @@ class ShapeView(QWidget):
     def __init__(self, parent=None):
         super(ShapeView, self).__init__(parent)
         self.polygons = []
+        self.buffer = {}
 
     def paintEvent(self, event):
+        pass
+
+    def draw_polygons(self, event):
         if self.polygons:
             painter = QPainter(self)
 
@@ -39,6 +43,20 @@ class ShapeView(QWidget):
                     painter.fillPath(path, QBrush(color))
                 # print(pa, pb, pc)
 
+    def draw_buffer(self, event):
+        painter = QPainter(self)
+        pen = QPen()
+
+        for x, y, color in self.buffer.values():
+            pen.setColor(color)
+
+            painter.drawPoint(QPoint(x, y))
+
+
+    def set_buffer(self, buffer):
+        self.buffer = buffer
+        self.paintEvent = self.draw_buffer
 
     def set_polygons(self, polygons):
         self.polygons = polygons
+        self.paintEvent = self.draw_polygons

@@ -33,8 +33,11 @@ class Model:
         self.front_color = QColor(255, 255, 0)
         self.inner_color = QColor(0, 255, 255)
 
-        self.z_buffer = []
-        self.init_z_buffer(self.width, self.height)
+        # Z - буфер
+        self.z_buffer = {}
+
+    def clean_z_buffer(self):
+        self.z_buffer = {}
 
     def set_shape(self, shape):
         self.shape = shape
@@ -225,30 +228,43 @@ class Model:
 
         return polygon_color
 
-    def triangle_rasterization(self, polygon, pixel_function, *args):
+    def z_buffer_with_depth_check(self, polygon, x, y, color):
+        # Если данный пиксел уже есть в буфере, то проверим, не лежит
+        # ли текущий пиксел ближе к наблюдателю, чем пиксел в буфере.
+        if self.z_buffer[(x,y)].get():
+
+        depth, _ = self.z_buffer[(x, y)]
+        current_depth = polygon.z_depth(x, y)
+        # Если в буфере более далекий объект, то заменяем.
+        if depth < current_depth:
+            self.z_buffer[(x, y)] = (current_depth, color)
+
+    def flat_triangle_rasterization(self, polygon, color):
         # Сортируем вершины по значению координаты y.
-        t0, t1, t2 = sorted(polygon.vertices(), key=attrgetter('y'))
+        t0, t1, t2 = sorted(polygon.convertion_two_dim(), key=attrgetter('y'))
 
         # Высота треугольника
         total_height = t2.y - t0.y
 
         # Рассматриваем верхнюю половину треугольника
-        for y in range(t0.y, t1.y + 1):
+        for y in range(int(t0.y), int(t1.y + 1)):
             segment_height = t1.y - t0.y + 1
             alpha = (y - t0.y)/total_height
             beta = (y - t0.y)/segment_height
+            print(t0, t2-t0, alpha, (t2-t0)*alpha)
             a = t0 + (t2-t0)*alpha
             b = t0 + (t1-t0)*beta
 
             if a.x > b.x:
                 a, b = b, a
 
-            for x in range(a.x, b.x + 1):
-                color = pixel_function(x, y, args)
+            for x in range(int(a.x), int(b.x) + 1):
+                self.z_buffer_with_depth_check(polygon, x, y, color)
+
                 # self.z_buffer[x][y] = color
 
         # Нижняя половина треугольника
-        for y in range(t1.y, t2.y+1):
+        for y in range(int(t1.y), int(t2.y+1)):
             segment_height = t2.y - t1.y + 1
             alpha = (y - t0.y)/total_height
             beta = (y- t1.y)/segment_height
@@ -259,14 +275,22 @@ class Model:
                 a, b = b, a
 
             for x in range(a.x, b.x + 1):
-                pass
+                self.z_buffer_with_depth_check(polygon, x, y, color)
                 # color_function(x, y, color_args)
 
-
-
     def flat_shading_z_buffer(self):
-        pass
+        self.clean_z_buffer()
 
+        for polygon in self.polygons:
+            pol_coord = polygon.convertion_two_dim()
+            try:
+                pol_color = self.flat_shading_color(polygon)
+                self.flat_triangle_rasterization(polygon, color=pol_color)
+            except ZeroDivisionError:
+                # Чтобы не падало))
+                pol_color = None
+
+        return self.z_buffer
 
     def gouraud_shading(self):
         """
@@ -280,6 +304,8 @@ class Model:
         этом производится однократный обход всех полигонов и всех вершин.
         """
         v_map = {}  # Словарь "вершина : список нормалей смежных полигонов".
+
+        count = 0
 
         # Просматриваем каждый полигон и вычисляем его нормаль.
         for pol in self.polygons:

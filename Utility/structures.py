@@ -173,6 +173,10 @@ class HomogeneousPoint:
         s = "("+str(self.x)+", "+str(self.y)+", "+str(self.z)+", "+str(self.point_struct.item(3))+")"
         return s
 
+    def __hash__(self):
+        return hash((self.point_struct.item(0), self.point_struct.item(1),
+                    self.point_struct.item(2), self.point_struct.item(3)))
+
 
 # Точка двумерного пространства
 class Point:
@@ -184,7 +188,7 @@ class Point:
         return "("+str(self.x)+", "+str(self.y)+")"
 
     def __mul__(self, other):
-        if isinstance(int, other):
+        if isinstance(other, (int, float)):
             return Point(self.x*other, self.y*other)
 
     def __add__(self, other):
@@ -268,7 +272,7 @@ class Polygon:
                 self.c.convert_to_2d())
 
     def vertices(self):
-        return list(self.a, self.b, self.c)
+        return [self.a, self.b, self.c]
 
     def normal(self):
         v1 = (self.b.x - self.a.x,

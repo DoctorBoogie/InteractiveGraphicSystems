@@ -35,7 +35,7 @@ class Controller:
 
         self.view.show()
 
-        modes = ['Каркас', 'Плоская закраска']
+        modes = ['Каркас', 'Плоская закраска', 'Плоская закраска (Z-буфер)', 'Закраска Гуро']
         self.view.comboBox_mode.addItems(modes)
 
         shapes = ['Тор', 'Ракушка']
@@ -98,6 +98,10 @@ class Controller:
             self.drawing_mode = self.model.wireframe_model
         elif mode == 1:
             self.drawing_mode = self.model.flat_shading
+        elif mode == 2:
+            self.drawing_mode = self.model.flat_shading_z_buffer
+        elif mode == 3:
+            self.drawing_mode = self.model.gouraud_shading
         else:
             pass
 
@@ -146,7 +150,10 @@ class Controller:
 
     def update_all(self):
         self.model.polygon_approximation()
-        self.view.shape_view.set_polygons(self.drawing_mode())
+        if self.view.comboBox_mode.currentIndex() in [0, 1]:
+            self.view.shape_view.set_polygons(self.drawing_mode())
+        elif self.view.comboBox_mode.currentIndex() in [2, 3]:
+            self.view.shape_view.set_buffer(self.drawing_mode())
         self.view.shape_view.update()
 
     def set_limits(self, u_min, u_max, v_min, v_max):

@@ -229,14 +229,15 @@ class Model:
         return polygon_color
 
     def z_buffer_with_depth_check(self, polygon, x, y, color):
+        current_depth = polygon.z_depth(x, y)
         # Если данный пиксел уже есть в буфере, то проверим, не лежит
         # ли текущий пиксел ближе к наблюдателю, чем пиксел в буфере.
-        if self.z_buffer[(x,y)].get():
-
-        depth, _ = self.z_buffer[(x, y)]
-        current_depth = polygon.z_depth(x, y)
-        # Если в буфере более далекий объект, то заменяем.
-        if depth < current_depth:
+        if self.z_buffer.get( (x, y) ):
+            depth, _ = self.z_buffer[(x, y)]
+            # Если в буфере более далекий объект, то заменяем.
+            if depth < current_depth:
+                self.z_buffer[(x, y)] = (current_depth, color)
+        else:
             self.z_buffer[(x, y)] = (current_depth, color)
 
     def flat_triangle_rasterization(self, polygon, color):
@@ -251,7 +252,6 @@ class Model:
             segment_height = t1.y - t0.y + 1
             alpha = (y - t0.y)/total_height
             beta = (y - t0.y)/segment_height
-            print(t0, t2-t0, alpha, (t2-t0)*alpha)
             a = t0 + (t2-t0)*alpha
             b = t0 + (t1-t0)*beta
 
@@ -261,22 +261,19 @@ class Model:
             for x in range(int(a.x), int(b.x) + 1):
                 self.z_buffer_with_depth_check(polygon, x, y, color)
 
-                # self.z_buffer[x][y] = color
-
         # Нижняя половина треугольника
         for y in range(int(t1.y), int(t2.y+1)):
             segment_height = t2.y - t1.y + 1
             alpha = (y - t0.y)/total_height
-            beta = (y- t1.y)/segment_height
+            beta = (y - t1.y)/segment_height
             a = t0 + (t2-t0)*alpha
             b = t1 + (t2-t1)*beta
 
             if a.x > b.x:
                 a, b = b, a
 
-            for x in range(a.x, b.x + 1):
+            for x in range(int(a.x), int(b.x + 1)):
                 self.z_buffer_with_depth_check(polygon, x, y, color)
-                # color_function(x, y, color_args)
 
     def flat_shading_z_buffer(self):
         self.clean_z_buffer()

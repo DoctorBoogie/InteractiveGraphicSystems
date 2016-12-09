@@ -9,8 +9,7 @@ class ShapeView(QWidget):
         self.polygons = []
         self.buffer = {}
 
-    def paintEvent(self, event):
-        pass
+        self.paintEvent = self.draw_polygons
 
     def draw_polygons(self, event):
         if self.polygons:
